@@ -1,0 +1,290 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  db:
+    image: postgres:15-alpine
+    container_name: species_db_dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-species_monitoring}
+      POSTGRES_USER: ${POSTGRES_USER:-species_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secure_password}
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+      - ../../database/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - species_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-species_user} -d ${POSTGRES_DB:-species_monitoring}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: species_redis_dev
+    restart: unless-stopped
+    command: redis-server --appendonly yes --replica-read-only no
+    volumes:
+      - redis_data_dev:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - species_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Backend Development Server
+  backend:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: species_backend_dev
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=development
+      - FLASK_DEBUG=1
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-species_user}:${POSTGRES_PASSWORD:-secure_password}@db:5432/${POSTGRES_DB:-species_monitoring}
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-jwt-secret-key-change-in-production}
+      - UPLOAD_FOLDER=/app/uploads
+      - PYTHONPATH=/app
+      - FLASK_APP=wsgi.py
+    volumes:
+      - ../../backend:/app
+      - uploads_data_dev:/app/uploads
+      - ../../logs:/app/logs
+    ports:
+      - "5000:5000"
+      - "5555:5555"  # Flower (Celery monitoring)
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - species_network
+    command: >
+      sh -c "
+        echo 'Waiting for database...' &&
+        while ! nc -z db 5432; do sleep 1; done &&
+        echo 'Database ready!' &&
+        flask db upgrade &&
+        flask seed-data &&
+        python -m flask run --host=0.0.0.0 --port=5000 --reload
+      "
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # Celery Worker (Development)
+  celery:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: species_celery_dev
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-species_user}:${POSTGRES_PASSWORD:-secure_password}@db:5432/${POSTGRES_DB:-species_monitoring}
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-jwt-secret-key-change-in-production}
+      - PYTHONPATH=/app
+    volumes:
+      - ../../backend:/app
+      - uploads_data_dev:/app/uploads
+      - ../../logs:/app/logs
+    depends_on:
+      - db
+      - redis
+      - backend
+    networks:
+      - species_network
+    command: >
+      sh -c "
+        echo 'Waiting for backend to be ready...' &&
+        while ! nc -z backend 5000; do sleep 2; done &&
+        echo 'Starting Celery worker...' &&
+        celery -A app.celery_app worker --loglevel=info --pool=solo
+      "
+
+  # Celery Beat (Task Scheduler)
+  celery-beat:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: species_celery_beat_dev
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=development
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-species_user}:${POSTGRES_PASSWORD:-secure_password}@db:5432/${POSTGRES_DB:-species_monitoring}
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-jwt-secret-key-change-in-production}
+      - PYTHONPATH=/app
+    volumes:
+      - ../../backend:/app
+      - uploads_data_dev:/app/uploads
+    depends_on:
+      - db
+      - redis
+      - backend
+    networks:
+      - species_network
+    command: >
+      sh -c "
+        echo 'Waiting for backend to be ready...' &&
+        while ! nc -z backend 5000; do sleep 2; done &&
+        echo 'Starting Celery beat...' &&
+        celery -A app.celery_app beat --loglevel=info
+      "
+
+  # Flower (Celery Monitoring)
+  flower:
+    build:
+      context: ../../backend
+      dockerfile: Dockerfile
+      target: development
+    container_name: species_flower_dev
+    restart: unless-stopped
+    environment:
+      - FLOWER_PORT=5555
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+    ports:
+      - "5555:5555"
+    depends_on:
+      - redis
+      - celery
+    networks:
+      - species_network
+    command: celery -A app.celery_app flower --port=5555
+
+  # Frontend Development Server
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: species_frontend_dev
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:5000/api
+      - CHOKIDAR_USEPOLLING=true
+      - WATCHPACK_POLLING=true
+    volumes:
+      - ../../frontend:/app
+      - frontend_node_modules:/app/node_modules
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - species_network
+    command: npm start
+    stdin_open: true
+    tty: true
+
+  # Mailhog (Email Testing)
+  mailhog:
+    image: mailhog/mailhog
+    container_name: species_mailhog_dev
+    restart: unless-stopped
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Web UI
+    networks:
+      - species_network
+
+  # MinIO (S3-compatible object storage for development)
+  minio:
+    image: minio/minio:latest
+    container_name: species_minio_dev
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data_dev:/data
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - species_network
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Database Administration (pgAdmin)
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: species_pgadmin_dev
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@species-monitoring.local
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin_data_dev:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+    networks:
+      - species_network
+
+  # Redis Commander (Redis Administration)
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: species_redis_commander_dev
+    restart: unless-stopped
+    environment:
+      - REDIS_HOSTS=local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - species_network
+
+volumes:
+  postgres_data_dev:
+    driver: local
+  redis_data_dev:
+    driver: local
+  uploads_data_dev:
+    driver: local
+  minio_data_dev:
+    driver: local
+  pgadmin_data_dev:
+    driver: local
+  frontend_node_modules:
+    driver: local
+
+networks:
+  species_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
