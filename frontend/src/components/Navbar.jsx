@@ -42,9 +42,9 @@ const Navbar = () => {
   };
 
   const navigationItems = [
-    { path: '/dashboard', label: 'Dashboard', icon:  },
-    { path: '/projects', label: 'Projects', icon:  },
-    { path: '/observations', label: 'Observations', icon:  },
+    { path: '/dashboard', label: 'Dashboard', icon: <Dashboard /> },
+    { path: '/projects', label: 'Projects', icon: <FolderOpen /> },
+    { path: '/observations', label: 'Observations', icon: <Visibility /> },
   ];
 
   // Add admin-only items
@@ -52,13 +52,13 @@ const Navbar = () => {
     navigationItems.push({
       path: '/users',
       label: 'Users',
-      icon: 
+      icon: <People />
     });
   }
 
   return (
-    
-      
+    <AppBar position="static">
+      <Toolbar>
         <Typography
           variant="h6"
           component="div"
@@ -66,9 +66,9 @@ const Navbar = () => {
           onClick={() => navigate('/dashboard')}
         >
           Species Monitor
-        
+        </Typography>
 
-        
+        <Box sx={{ flexGrow: 1, display: 'flex' }}>
           {navigationItems.map((item) => (
             <Button
               key={item.path}
@@ -84,32 +84,53 @@ const Navbar = () => {
               }}
             >
               {item.label}
-            
+            </Button>
           ))}
-        
+        </Box>
 
-        
-          
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Typography variant="body2" sx={{ mr: 2 }}>
             {user?.first_name} {user?.last_name}
-          
-          
-            
+          </Typography>
+          <IconButton
+            size="large"
+            aria-label="account of current user"
+            aria-controls="menu-appbar"
+            aria-haspopup="true"
+            onClick={handleMenuClick}
+            color="inherit"
+          >
+            <Avatar sx={{ width: 32, height: 32 }}>
               {user?.first_name?.charAt(0)?.toUpperCase()}
-            
-          
-          
+            </Avatar>
+          </IconButton>
+          <Menu
+            id="menu-appbar"
+            anchorEl={anchorEl}
+            anchorOrigin={{
+              vertical: 'bottom',
+              horizontal: 'right',
+            }}
+            keepMounted
+            transformOrigin={{
+              vertical: 'top',
+              horizontal: 'right',
+            }}
+            open={Boolean(anchorEl)}
+            onClose={handleMenuClose}
+          >
             <MenuItem onClick={() => navigate('/profile')}>
-              
+              <AccountCircle sx={{ mr: 1 }} />
               Profile
-            
-            
-              
+            </MenuItem>
+            <MenuItem onClick={handleLogout}>
+              <ExitToApp sx={{ mr: 1 }} />
               Logout
-            
-          
-        
-      
-    
+            </MenuItem>
+          </Menu>
+        </Box>
+      </Toolbar>
+    </AppBar>
   );
 };
 

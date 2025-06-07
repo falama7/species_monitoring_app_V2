@@ -32,15 +32,15 @@ const ConfirmDialog = ({
   const getIcon = () => {
     switch (severity) {
       case 'error':
-        return ;
+        return <Error color="error" />;
       case 'warning':
-        return ;
+        return <Warning color="warning" />;
       case 'info':
-        return ;
+        return <Info color="info" />;
       case 'success':
-        return ;
+        return <CheckCircle color="success" />;
       default:
-        return ;
+        return <Warning color="warning" />;
     }
   };
 
@@ -60,31 +60,31 @@ const ConfirmDialog = ({
   };
 
   return (
-    
-      
-        
+    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+      <DialogTitle>
+        <Box display="flex" alignItems="center" gap={1}>
           {getIcon()}
-          
+          <Typography variant="h6">
             {title}
-          
-        
-      
+          </Typography>
+        </Box>
+      </DialogTitle>
 
-      
-        
+      <DialogContent>
+        <Typography variant="body1">
           {message}
-        
-      
+        </Typography>
+      </DialogContent>
 
-      
-        
+      <DialogActions>
+        <Button onClick={handleCancel} color="inherit">
           {cancelText}
-        
-        
+        </Button>
+        <Button onClick={onConfirm} variant="contained" color={getButtonColor()}>
           {confirmText}
-        
-      
-    
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 

@@ -139,47 +139,46 @@ const ChartContainer = ({ observations = [] }) => {
   const renderChart = () => {
     switch (chartType) {
       case 'timeline':
-        return ;
+        return <Line data={timelineData} options={chartOptions} />;
       case 'species':
-        return ;
+        return <Doughnut data={speciesData} options={chartOptions} />;
       case 'observers':
-        return ;
+        return <Bar data={observersData} options={chartOptions} />;
       default:
-        return ;
+        return <Line data={timelineData} options={chartOptions} />;
     }
   };
 
   if (!observations.length) {
     return (
-      
-        
+      <Box p={4} textAlign="center">
+        <Typography variant="body1" color="textSecondary">
           No data available for charts
-        
-      
+        </Typography>
+      </Box>
     );
   }
 
   return (
-    
-      
-        
-          Chart Type
+    <Box>
+      <Box mb={2}>
+        <FormControl size="small" sx={{ minWidth: 200 }}>
+          <InputLabel>Chart Type</InputLabel>
           <Select
             value={chartType}
             label="Chart Type"
             onChange={(e) => setChartType(e.target.value)}
           >
-            Timeline
-            Species Distribution
-            Observers Activity
-          
-        
-      
-      
-      
+            <MenuItem value="timeline">Timeline</MenuItem>
+            <MenuItem value="species">Species Distribution</MenuItem>
+            <MenuItem value="observers">Observers Activity</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
+      <Box height={400}>
         {renderChart()}
-      
-    
+      </Box>
+    </Box>
   );
 };
 

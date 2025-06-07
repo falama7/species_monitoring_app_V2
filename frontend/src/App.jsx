@@ -65,41 +65,42 @@ const theme = createTheme({
 
 function App() {
   return (
-    
-      
-      
-        
-          
-            
-              
-                } />
-                } />
-                
-                      
-                    
-                  }
-                />
-              
-            
-          
-        
-      
-    
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <LocalizationProvider dateAdapter={AdapterDateFns}>
+        <AuthProvider>
+          <Router>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route 
+                path="/*" 
+                element={
+                  <ProtectedRoute>
+                    <AppContent />
+                  </ProtectedRoute>
+                } 
+              />
+            </Routes>
+          </Router>
+        </AuthProvider>
+      </LocalizationProvider>
+    </ThemeProvider>
   );
 }
 
 function AppContent() {
   return (
     <>
-      
-      
-        } />
-        } />
-        } />
-        } />
-        } />
-        } />
-      
+      <Navbar />
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/projects" element={<Projects />} />
+        <Route path="/projects/:id" element={<ProjectDetail />} />
+        <Route path="/observations" element={<Observations />} />
+        <Route path="/users" element={<UserManagement />} />
+      </Routes>
     </>
   );
 }

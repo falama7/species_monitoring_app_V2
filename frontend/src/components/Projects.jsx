@@ -117,27 +117,29 @@ const Projects = () => {
     return matchesSearch && matchesStatus;
   });
 
-  if (loading) return ;
+  if (loading) return <LoadingSpinner />;
 
   return (
-    
-      
-        
+    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
+        <Typography variant="h4" component="h1">
           Projects
-        
-        }
+        </Typography>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
           onClick={handleCreateProject}
         >
           New Project
-        
-      
+        </Button>
+      </Box>
 
-      {error && }
+      {error && <ErrorMessage message={error} onRetry={loadProjects} />}
 
       {/* Filters */}
-      
-        
-          
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6} md={8}>
             <TextField
               fullWidth
               label="Search projects..."
@@ -145,8 +147,8 @@ const Projects = () => {
               onChange={(e) => setSearchTerm(e.target.value)}
               size="small"
             />
-          
-          
+          </Grid>
+          <Grid item xs={12} sm={6} md={4}>
             <TextField
               fullWidth
               select
@@ -155,21 +157,21 @@ const Projects = () => {
               onChange={(e) => setStatusFilter(e.target.value)}
               size="small"
             >
-              All Status
-              Active
-              Completed
-              Paused
-              Cancelled
-            
-          
-        
-      
+              <MenuItem value="all">All Status</MenuItem>
+              <MenuItem value="active">Active</MenuItem>
+              <MenuItem value="completed">Completed</MenuItem>
+              <MenuItem value="paused">Paused</MenuItem>
+              <MenuItem value="cancelled">Cancelled</MenuItem>
+            </TextField>
+          </Grid>
+        </Grid>
+      </Paper>
 
       {/* Projects Grid */}
       {filteredProjects.length > 0 ? (
-        
+        <Grid container spacing={3}>
           {filteredProjects.map((project) => (
-            
+            <Grid item xs={12} sm={6} md={4} key={project.id}>
               <Card
                 sx={{
                   height: '100%',
@@ -182,58 +184,62 @@ const Projects = () => {
                 }}
                 onClick={() => navigate(`/projects/${project.id}`)}
               >
-                
-                  
-                    
+                <CardContent sx={{ flexGrow: 1 }}>
+                  <Box display="flex" justifyContent="space-between" alignItems="flex-start" mb={1}>
+                    <Typography variant="h6" component="h2" gutterBottom>
                       {project.name}
-                    
-                    
-                  
+                    </Typography>
+                    <Chip
+                      label={project.status}
+                      color={getStatusColor(project.status)}
+                      size="small"
+                    />
+                  </Box>
 
                   {project.description && (
-                    
+                    <Typography variant="body2" color="textSecondary" paragraph>
                       {project.description}
-                    
+                    </Typography>
                   )}
 
-                  
+                  <Box spacing={1}>
                     {project.location && (
-                      
-                        
-                        
+                      <Box display="flex" alignItems="center" mb={1}>
+                        <LocationOn fontSize="small" sx={{ mr: 1 }} />
+                        <Typography variant="body2" color="textSecondary">
                           {project.location}
-                        
-                      
+                        </Typography>
+                      </Box>
                     )}
 
                     {project.start_date && (
-                      
-                        
-                        
+                      <Box display="flex" alignItems="center" mb={1}>
+                        <DateRange fontSize="small" sx={{ mr: 1 }} />
+                        <Typography variant="body2" color="textSecondary">
                           {new Date(project.start_date).toLocaleDateString()}
                           {project.end_date && ` - ${new Date(project.end_date).toLocaleDateString()}`}
-                        
-                      
+                        </Typography>
+                      </Box>
                     )}
 
-                    
-                      
-                        
-                        
+                    <Box display="flex" justifyContent="space-between" mt={2}>
+                      <Box display="flex" alignItems="center">
+                        <People fontSize="small" sx={{ mr: 0.5 }} />
+                        <Typography variant="caption" color="textSecondary">
                           {project.members_count} members
-                        
-                      
-                      
-                        
-                        
+                        </Typography>
+                      </Box>
+                      <Box display="flex" alignItems="center">
+                        <Visibility fontSize="small" sx={{ mr: 0.5 }} />
+                        <Typography variant="caption" color="textSecondary">
                           {project.observations_count} observations
-                        
-                      
-                    
-                  
-                
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+                </CardContent>
 
-                
+                <CardActions sx={{ justifyContent: 'space-between' }}>
                   <Button
                     size="small"
                     onClick={(e) => {
@@ -242,58 +248,71 @@ const Projects = () => {
                     }}
                   >
                     View Details
-                  
-                  
-                  {(project.created_by?.id === user?.id || user?.role === 'admin') && (
-                    
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditProject(project);
-                        }}
-                      >
-                        
-                      
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteProject(project);
-                        }}
-                      >
-                        
-                      
-                    
-                  )}
-                
-              
-            
+                  </Button>
+                  <Box>
+                    {(project.created_by?.id === user?.id || user?.role === 'admin') && (
+                      <>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditProject(project);
+                          }}
+                        >
+                          <Edit />
+                        </IconButton>
+                        <IconButton
+                          size="small"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteProject(project);
+                          }}
+                        >
+                          <Delete />
+                        </IconButton>
+                      </>
+                    )}
+                  </Box>
+                </CardActions>
+              </Card>
+            </Grid>
           ))}
-        
+        </Grid>
       ) : (
-        
-          
+        <Box textAlign="center" py={8}>
+          <Typography variant="h6" gutterBottom>
             No projects found
-          
-          
+          </Typography>
+          <Typography variant="body2" color="textSecondary" paragraph>
             {searchTerm || statusFilter !== 'all' 
               ? 'Try adjusting your search criteria'
               : 'Create your first project to get started with wildlife monitoring'
             }
-          
-          }
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<Add />}
             onClick={handleCreateProject}
           >
             Create Project
-          
-        
+          </Button>
+        </Box>
       )}
 
       {/* Floating Action Button for mobile */}
-      
-        
-      
+      <Fab
+        color="primary"
+        aria-label="add"
+        sx={{
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
+          display: { sm: 'none' }
+        }}
+        onClick={handleCreateProject}
+      >
+        <Add />
+      </Fab>
 
       {/* Project Form Dialog */}
       <ProjectForm
@@ -315,7 +334,7 @@ const Projects = () => {
         onCancel={() => setDeleteDialog({ open: false, project: null })}
         severity="error"
       />
-    
+    </Container>
   );
 };
 

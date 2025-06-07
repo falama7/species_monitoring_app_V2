@@ -117,21 +117,21 @@ const ProjectForm = ({ open, onClose, onSuccess, project = null }) => {
   };
 
   return (
-    
-      
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+      <DialogTitle>
         {project ? 'Edit Project' : 'Create New Project'}
-      
+      </DialogTitle>
 
-      
-        
+      <DialogContent>
+        <Box component="form" onSubmit={handleSubmit}>
           {error && (
-            
+            <Alert severity="error" sx={{ mb: 2 }}>
               {error}
-            
+            </Alert>
           )}
 
-          
-            
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Project Name"
@@ -140,9 +140,9 @@ const ProjectForm = ({ open, onClose, onSuccess, project = null }) => {
                 required
                 disabled={loading}
               />
-            
+            </Grid>
 
-            
+            <Grid item xs={12}>
               <TextField
                 fullWidth
                 label="Description"
@@ -153,9 +153,9 @@ const ProjectForm = ({ open, onClose, onSuccess, project = null }) => {
                 disabled={loading}
                 helperText="Describe the project goals and methodology"
               />
-            
+            </Grid>
 
-            
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 label="Location"
@@ -164,9 +164,9 @@ const ProjectForm = ({ open, onClose, onSuccess, project = null }) => {
                 disabled={loading}
                 helperText="Study area or location"
               />
-            
+            </Grid>
 
-            
+            <Grid item xs={12} sm={6}>
               <TextField
                 fullWidth
                 select
@@ -176,54 +176,54 @@ const ProjectForm = ({ open, onClose, onSuccess, project = null }) => {
                 disabled={loading}
               >
                 {statusOptions.map((option) => (
-                  
+                  <MenuItem key={option.value} value={option.value}>
                     {option.label}
-                  
+                  </MenuItem>
                 ))}
-              
-            
+              </TextField>
+            </Grid>
 
-            
+            <Grid item xs={12} sm={6}>
               <DatePicker
                 label="Start Date"
                 value={formData.start_date}
                 onChange={handleDateChange('start_date')}
                 renderInput={(params) => (
-                  
+                  <TextField {...params} fullWidth disabled={loading} />
                 )}
               />
-            
+            </Grid>
 
-            
+            <Grid item xs={12} sm={6}>
               <DatePicker
                 label="End Date"
                 value={formData.end_date}
                 onChange={handleDateChange('end_date')}
                 renderInput={(params) => (
-                  
+                  <TextField {...params} fullWidth disabled={loading} />
                 )}
                 minDate={formData.start_date}
               />
-            
-          
+            </Grid>
+          </Grid>
 
           {loading && (
-            
-              
-            
+            <Box display="flex" justifyContent="center" mt={2}>
+              <LoadingSpinner />
+            </Box>
           )}
-        
+        </Box>
+      </DialogContent>
 
-        
-          
-            Cancel
-          
-          
-            {project ? 'Update' : 'Create'}
-          
-        
-      
-    
+      <DialogActions>
+        <Button onClick={onClose} disabled={loading}>
+          Cancel
+        </Button>
+        <Button onClick={handleSubmit} variant="contained" disabled={loading}>
+          {project ? 'Update' : 'Create'}
+        </Button>
+      </DialogActions>
+    </Dialog>
   );
 };
 

@@ -9,19 +9,26 @@ const ErrorMessage = ({
   severity = 'error' 
 }) => {
   return (
-    
-      }
+    <Box sx={{ p: 2 }}>
+      <Alert 
+        severity={severity}
+        action={
+          onRetry && (
+            <Button
+              color="inherit"
+              size="small"
+              startIcon={<Refresh />}
               onClick={onRetry}
             >
               Retry
-            
+            </Button>
           )
         }
       >
-        {title}
+        <AlertTitle>{title}</AlertTitle>
         {message}
-      
-    
+      </Alert>
+    </Box>
   );
 };
 
