@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: species-monitoring-config
+  namespace: species-monitoring
+data:
+  FLASK_ENV: "production"
+  REDIS_URL: "redis://redis-service:6379/0"
+  DATABASE_URL: "postgresql://species_user:$(POSTGRES_PASSWORD)@postgres-service:5432/species_monitoring"
+  REACT_APP_API_URL: "https://api.species-monitoring.example.com/api"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: species-monitoring-secrets
+  namespace: species-monitoring
+type: Opaque
+stringData:
+  POSTGRES_PASSWORD: "your-secure-password"
+  SECRET_KEY: "your-secret-key"
+  JWT_SECRET_KEY: "your-jwt-secret-key"
